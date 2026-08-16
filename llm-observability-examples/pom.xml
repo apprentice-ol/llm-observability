@@ -35,6 +35,11 @@
         </dependency>
     </dependencies>
 
+    <properties>
+        <!-- 示例模块只用于演示，不发布到 Maven 仓库 -->
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <build>
         <plugins>
             <plugin>

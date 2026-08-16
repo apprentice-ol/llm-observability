@@ -58,6 +58,18 @@ public List<Chunk> retrieve(String query) { ... }
 
 后端适配按需引入 `llm-observability-backends`，配置前缀统一为 `telemetry.*`。
 
+## 发布与使用
+
+当前坐标 `com.jjx.ai:llm-observability:0.1.0-SNAPSHOT` 是本地快照；要变成其它项目可直接拉取的“真依赖”，
+发布到 GitHub Packages 即可（根 POM 已配置好 `distributionManagement`）：
+
+```powershell
+$env:GITHUB_TOKEN = "你的 token"
+mvn deploy
+```
+
+完整步骤（Token 生成、Maven settings 配置、消费方仓库声明）见 [doc/publish-github-packages.md](doc/publish-github-packages.md)。
+
 ## 构建
 
 ```bash

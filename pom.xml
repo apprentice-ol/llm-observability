@@ -42,4 +42,18 @@
         <module>llm-observability-backends</module>
         <module>llm-observability-examples</module>
     </modules>
+
+    <!-- 发布到 GitHub Packages：mvn deploy 前先在 ~/.m2/settings.xml 配置 server(id=github) 凭据 -->
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/apprentice-ol/llm-observability</url>
+        </repository>
+        <snapshotRepository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/apprentice-ol/llm-observability</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>

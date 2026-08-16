@@ -5,6 +5,7 @@
 ## 文档
 
 - [llm-observability-README.md](./llm-observability-README.md)：核心模块完整 README（事件过滤器链、生命周期、配置、接口扩展等）。
+- [publish-github-packages.md](./publish-github-packages.md)：把 `com.jjx.ai` 依赖发布到 GitHub Packages 的完整步骤。
 - 根目录 [README](../README.md)：项目总览与快速开始。
 
 ## 效果图

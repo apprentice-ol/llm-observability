@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.nageoffer.ai</groupId>
+        <groupId>com.jjx.ai</groupId>
         <artifactId>llm-observability-parent</artifactId>
         <version>0.1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
@@ -17,7 +17,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.nageoffer.ai</groupId>
+            <groupId>com.jjx.ai</groupId>
             <artifactId>llm-observability-backends</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -41,7 +41,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.nageoffer.ai.llmobservability.example.BackendClientsExampleApplication</mainClass>
+                    <mainClass>com.jjx.ai.llmobservability.example.BackendClientsExampleApplication</mainClass>
                 </configuration>
             </plugin>
         </plugins>

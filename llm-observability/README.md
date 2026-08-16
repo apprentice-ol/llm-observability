@@ -29,7 +29,7 @@
 
 ```xml
 <dependency>
-    <groupId>com.nageoffer.ai</groupId>
+    <groupId>com.jjx.ai</groupId>
     <artifactId>llm-observability</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 </dependency>
@@ -299,7 +299,7 @@ ObservationPipeline.emit
 - `PasswordRedactorFilter`：前置修改 Map 中的 password/secret 字段（脱敏）；
 - `DebugEventDropFilter`：不调用 `chain.doFilter(event)` 丢弃 `debug.trace` 事件。
 
-代码见 [llm-observability-examples](llm-observability-examples/src/main/java/com/nageoffer/ai/llmobservability/example/filter/)。
+代码见 [llm-observability-examples](llm-observability-examples/src/main/java/com/jjx/ai/llmobservability/example/filter/)。
 
 - **前置 / 后置**：`chain.doFilter(event)` 之前的代码为前置，之后为后置；
 - **丢弃**：不调用 `chain.doFilter(event)`，该事件/日志直接过滤；

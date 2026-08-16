@@ -43,7 +43,7 @@ Langfuse 单条 trace 详情（输入/输出、token 用量、耗时）：
 
 ```xml
 <dependency>
-    <groupId>com.nageoffer.ai</groupId>
+    <groupId>com.jjx.ai</groupId>
     <artifactId>llm-observability</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>

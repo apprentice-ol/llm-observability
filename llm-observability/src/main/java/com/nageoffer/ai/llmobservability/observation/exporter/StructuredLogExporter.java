@@ -22,9 +22,9 @@ public class StructuredLogExporter implements ObservationExporter {
     @Override
     public void export(TelemetryEvent event, SpanWriter target) {
         switch (event.getType()) {
-            case STEP_INPUT -> TelemetryStructuredLog.emit("step.input", event.getName(), event.getSpanId(), event.getData(), null);
-            case STEP_OUTPUT -> TelemetryStructuredLog.emit("step.output", event.getName(), event.getSpanId(), event.getData(), event.getDurationMs());
-            case CUSTOM -> TelemetryStructuredLog.emit(event.getName(), event.getData());
+            case STEP_INPUT -> TelemetryStructuredLog.emitUnfiltered("step.input", event.getName(), event.getSpanId(), event.getData(), null);
+            case STEP_OUTPUT -> TelemetryStructuredLog.emitUnfiltered("step.output", event.getName(), event.getSpanId(), event.getData(), event.getDurationMs());
+            case CUSTOM -> TelemetryStructuredLog.emitUnfiltered(event.getName(), event.getData());
             default -> { /* TRACE_IO/ATTRIBUTE：不发日志 */ }
         }
     }

@@ -12,7 +12,7 @@ import com.nageoffer.ai.llmobservability.observation.event.TelemetryEvent;
  * 或返回 <b>null</b> 将其过滤（不再流向 ObservationExporter）。</p>
  *
  * <p><b>扩展点</b>（框架的核心扩展面）：实现本接口 + {@code @Component} + {@code @Order} 即自动进
- * {@link ObservationPipeline} 的 processor 链。内置：摘要（Summarize）、截断（SpanIoLimit）；可扩展：敏感过滤、
+ * {@link ObservationPipeline} 的 processor 链。内置：摘要（Summarize）、截断（SpanIoLimit）；事件过滤器链（TelemetryFilter）由 ObservationPipeline 包在 processor 链之外；可扩展：采样、
  * 采样、语义映射（如 rag.trace.* → langfuse.*）等。processor 必须无状态（pipeline 全局共享，多线程调用）。</p>
  *
  * <p><b>不做什么</b>：不写 span / 不发日志（那是 ObservationExporter 的职责）；不开/关 span。</p>

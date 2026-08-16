@@ -5,6 +5,7 @@
 - `LangfuseDatasetExample`：`LangfuseDatasetClient` / `LangfuseScoreClient` 用法（列数据集条目、关联 run item、提交评分），
   以及综合编排参考实现 `runDatasetEvaluation`（跑数据集 → 关联 → LLM 打分写回）。
 - `OpenObserveQueryExample`：`OpenObserveQueryClient` 用法（按 traceId 查日志 / 查 span 链路）。
+- `PasswordRedactorFilter` / `DebugEventDropFilter`：事件过滤器链（`TelemetryFilter`）示例——前置脱敏、不调用 `chain.doFilter` 丢弃事件。
 - `ExampleRunner`：只读演示（默认关闭）。
 
 ## 运行只读演示

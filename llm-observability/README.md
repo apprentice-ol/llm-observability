@@ -6,6 +6,7 @@
 - 会话级 trace（`@TelemetryConversation`）
 - 结构化事件日志（`TelemetryLogger` / `TelemetryStructuredLog`）
 - 统一的事件处理与导出管线（`processor` + `exporter`）
+- 事件过滤器链（Spring 风格 SPI：宿主实现 `TelemetryFilter`，组件在整个日志生命周期统一执行）
 - 框架无关的 LLM 观测规范（`LlmObservations` / `LlmTraceHandler`）
 
 核心原则：**业务只面向 OTel / Micrometer 写通用语义，后端（OpenObserve、Langfuse、任意新后端）可插拔**。
@@ -256,6 +257,56 @@ flux.doOnNext(...)
 
 `ObservationPipeline` 会自动收集所有 `ObservationProcessor` / `ObservationExporter` bean，并按 `@Order` 排序执行。
 
+### 事件过滤器链（SPI：前置 / 后置）
+
+组件**不内置任何过滤规则**（脱敏、丢弃等策略由宿主实现），只提供 Spring 风格的过滤器链：宿主实现 `TelemetryFilter`
+并注册为 Spring bean，组件自动收集全部过滤器、按 `@Order` / `Ordered` 排序统一执行。
+
+过滤器链在可观测过程中的位置（包住“处理 + 落库”的整条下游）：
+
+```text
+业务埋点（@TelemetryStep / TelemetryTemplate / TelemetryLogger.event）
+   │ 产生 TelemetryEvent
+   ▼
+ObservationPipeline.emit
+   │
+   ▼
+┌──────────────────────────────────────────────────────────────┐
+│ TelemetryFilterChain（同一过滤器链，按 @Order 排序）              │
+│                                                              │
+│   chain.doFilter(event) 之前 = 前置：可修改 / 丢弃               │
+│              │                                               │
+│              ▼                                               │
+│   processor 链：摘要(10) → 截断(20) → 用户扩展(30+)             │
+│              │                                               │
+│              ▼                                               │
+│   exporter 链：span attribute(10) → 结构化日志(20) → 指标(30)  │
+│              │                                               │
+│   chain.doFilter(event) 之后 = 后置：下游全部完成后执行           │
+└──────────────────────────────────────────────────────────────┘
+   │
+   ├──► span attribute ──► OTel Traces ──► 后端
+   └──► 结构化日志 ──► slf4j ──► logback appender ──► OTLP Logs / 后端
+```
+
+除事件链路外，同一过滤器链还覆盖另外两条日志路径：
+
+1. **直发结构化日志**：`TelemetryStructuredLog.emit` 直接调用时，经静态桥走同一过滤器链，再进 slf4j；
+2. **普通日志**：`TelemetryLogbackFilter` 默认装到所有 logback appender 之前，业务/框架/第三方日志都走同一过滤器链（`telemetry.telemetry` 结构化 logger 跳过，避免重复过滤；`telemetry.filter.logback-enabled=false` 关闭）。
+
+可运行的完整示例已放在 examples 模块：
+
+- `PasswordRedactorFilter`：前置修改 Map 中的 password/secret 字段（脱敏）；
+- `DebugEventDropFilter`：不调用 `chain.doFilter(event)` 丢弃 `debug.trace` 事件。
+
+代码见 [llm-observability-examples](llm-observability-examples/src/main/java/com/nageoffer/ai/llmobservability/example/filter/)。
+
+- **前置 / 后置**：`chain.doFilter(event)` 之前的代码为前置，之后为后置；
+- **丢弃**：不调用 `chain.doFilter(event)`，该事件/日志直接过滤；
+- **排序**：多个过滤器按 `@Order` / `Ordered` 从小到大执行；
+- **开关**：`telemetry.filter.enabled=false` 整体关闭；`telemetry.filter.logback-enabled=false` 关闭普通日志的 appender 级过滤；
+- **手动执行**：`TelemetryFilterChain` 本身也是 Spring bean，可注入业务代码后调用 `apply(event)`。
+
 ### `ObservationProcessor`：处理（转）
 
 在落地前加工、过滤、映射事件。返回 `null` 表示丢弃该事件。
@@ -263,22 +314,18 @@ flux.doOnNext(...)
 ```java
 @Component
 @Order(30)
-public class SensitiveFilterProcessor implements ObservationProcessor {
+public class EventNameFilter implements ObservationProcessor {
     @Override
     public TelemetryEvent process(TelemetryEvent event) {
-        if (event.getType() == TelemetryEvent.EventType.STEP_INPUT
-                || event.getType() == TelemetryEvent.EventType.STEP_OUTPUT) {
-            String s = String.valueOf(event.getData());
-            if (s.contains("password")) {
-                return null;
-            }
+        if ("debug.trace".equals(event.getName())) {
+            return null;
         }
         return event;
     }
 }
 ```
 
-内置 processor：`SummarizeProcessor`（摘要，@Order 10）、`SpanIoLimitProcessor`（截断，@Order 20）。
+内置 processor：`SummarizeProcessor`（摘要，@Order 10）、`SpanIoLimitProcessor`（截断，@Order 20）；事件过滤器链包在 `ObservationPipeline.emit` 之外，先于 processor 执行（前置/后置见上一节）。
 
 ### `ObservationExporter`：落地（发）
 
@@ -445,6 +492,8 @@ telemetry:
 | `telemetry.collector.logs-endpoint` | collector logs 出口 | `base-url/v1/logs` |
 | `telemetry.collector.metrics-endpoint` | collector metrics 出口 | `base-url/v1/metrics` |
 | `telemetry.sampling.probability` | trace 采样率（0.0~1.0） | `1.0` |
+| `telemetry.filter.enabled` | 是否执行事件过滤器链（规则由宿主实现 `TelemetryFilter` 提供） | `true` |
+| `telemetry.filter.logback-enabled` | 是否把过滤器链装到所有 logback appender 之前（覆盖普通/框架日志） | `true` |
 | `telemetry.springai.log-prompt` | 桥接 `spring.ai.chat.observations.log-prompt` | `false` |
 | `telemetry.springai.log-completion` | 桥接 `spring.ai.chat.observations.log-completion` | `false` |
 
@@ -454,6 +503,7 @@ Spring AI 宿主：LLM 的 `gen_ai` span 与 token 用量由 Spring AI 原生输
 
 1. **大 payload 摘要**：step input/output 默认走 `SummarizeProcessor` + `SpanIoLimitProcessor`，避免整篇文档 / 完整检索结果撑爆 span 和日志。需要完整原文时用 `outputRaw` / `captureOutput=true`。
 2. **敏感信息**：Spring AI 的 prompt/completion 默认不落库；`telemetry.springai.*` 排查完记得关闭。
+   如需对日志/span 脱敏，实现 `TelemetryFilter` 注册为 bean 即可，组件负责在整个日志生命周期（事件链路 / 直发结构化日志 / logback appender）执行过滤器链。
 3. **采样**：生产环境建议调低 `telemetry.sampling.probability`，避免 trace 数据量过大。
 4. **后端无关**：业务埋点只用通用 `rag.*` / `gen_ai.*` 语义，后端专属映射下沉到 collector 的 transform processor，换后端不碰业务代码。
 5. **异步规则**：跨线程写 span/output 前先捕获句柄引用，别依赖 `Span.current()`。

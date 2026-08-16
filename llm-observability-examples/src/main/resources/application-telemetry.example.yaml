@@ -52,6 +52,12 @@ telemetry:
     summarize-max-preview: 1000000   # 测试阶段大值，避免集合/数组只留预览
     summarize-max-map-entries: 1000000 # 测试阶段大值，避免 Map 只留前几条
 
+  # 事件过滤器链（Spring 风格 SPI，规则由宿主实现 TelemetryFilter 提供）
+  # 覆盖：事件链路（processor/exporter 前后置）、TelemetryStructuredLog 直发、logback appender 前普通日志。
+  # filter:
+  #   enabled: true          # 整体开关
+  #   logback-enabled: true  # 是否在 logback appender 前过滤普通日志
+
   # ---------------------------------------------------------------
   # 2. OTel Collector：可选开关
   #    enabled=true  应用只发 collector

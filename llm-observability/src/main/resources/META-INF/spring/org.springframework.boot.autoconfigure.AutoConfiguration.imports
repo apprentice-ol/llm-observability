@@ -1,2 +1,3 @@
 com.nageoffer.ai.llmobservability.autoconfigure.TelemetryAutoConfiguration
 com.nageoffer.ai.llmobservability.autoconfigure.OpenTelemetryLogbackAppenderAutoConfiguration
+com.nageoffer.ai.llmobservability.autoconfigure.TelemetryFilterLogbackAutoConfiguration

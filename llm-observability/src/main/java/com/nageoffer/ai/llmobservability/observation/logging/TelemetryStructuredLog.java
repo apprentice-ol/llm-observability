@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.ReflectionAccessFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.nageoffer.ai.llmobservability.observation.event.TelemetryEvent;
+import com.nageoffer.ai.llmobservability.observation.filter.TelemetryFilterSupport;
 import com.nageoffer.ai.llmobservability.observation.support.AttributeKeys;
 import org.slf4j.MDC;
 
@@ -19,7 +21,10 @@ import org.slf4j.MDC;
  */
 public final class TelemetryStructuredLog {
 
-    private static final Logger log = LoggerFactory.getLogger("telemetry.telemetry");
+    /** 结构化日志固定 logger，logback 过滤器据此跳过已过滤的日志，避免重复执行。 */
+    public static final String LOGGER_NAME = "telemetry.telemetry";
+
+    private static final Logger log = LoggerFactory.getLogger(LOGGER_NAME);
     private static final Gson GSON = new GsonBuilder()
             .disableHtmlEscaping()
             .addReflectionAccessFilter(ReflectionAccessFilter.BLOCK_INACCESSIBLE_JAVA)
@@ -38,6 +43,18 @@ public final class TelemetryStructuredLog {
      * @param durationMs 耗时（仅 step.output），可空
      */
     public static void emit(String event, String step, String stepId, Object data, Long durationMs) {
+        TelemetryEvent telemetryEvent = new TelemetryEvent(TelemetryEvent.EventType.CUSTOM, event, stepId, data);
+        if (!TelemetryFilterSupport.pass(telemetryEvent)) {
+            return;  // 被过滤器链丢弃
+        }
+        emitUnfiltered(event, step, stepId, telemetryEvent.getData(), durationMs);
+    }
+
+    /**
+     * 内部使用：数据已在 {@code ObservationPipeline} 的过滤器链处理过，不再重复过滤。
+     * 普通调用方请使用 {@link #emit(String, String, String, Object, Long)}。
+     */
+    public static void emitUnfiltered(String event, String step, String stepId, Object data, Long durationMs) {
         JsonObject obj = new JsonObject();
         obj.addProperty("_event", event);
         if (step != null) {
@@ -66,5 +83,10 @@ public final class TelemetryStructuredLog {
      */
     public static void emit(String event, Object data) {
         emit(event, MDC.get(AttributeKeys.step()), MDC.get(AttributeKeys.stepId()), data, null);
+    }
+
+    /** 内部使用：2 参快捷重载的免过滤版本，供已过过滤器链的 exporter 使用。 */
+    public static void emitUnfiltered(String event, Object data) {
+        emitUnfiltered(event, MDC.get(AttributeKeys.step()), MDC.get(AttributeKeys.stepId()), data, null);
     }
 }

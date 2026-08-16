@@ -8,9 +8,12 @@ import com.nageoffer.ai.llmobservability.observation.ObservationPipeline;
 import com.nageoffer.ai.llmobservability.observation.aspect.TelemetryConversationAspect;
 import com.nageoffer.ai.llmobservability.observation.aspect.TelemetryStepAspect;
 import com.nageoffer.ai.llmobservability.observation.exporter.*;
+import com.nageoffer.ai.llmobservability.observation.filter.TelemetryFilter;
+import com.nageoffer.ai.llmobservability.observation.filter.TelemetryFilterChain;
 import com.nageoffer.ai.llmobservability.observation.llm.GenAiLlmTraceHandler;
 import com.nageoffer.ai.llmobservability.observation.llm.LlmTraceHandler;
 import com.nageoffer.ai.llmobservability.observation.processor.ObservationProcessor;
+import com.nageoffer.ai.llmobservability.observation.filter.TelemetryFilterSupport;
 import com.nageoffer.ai.llmobservability.observation.processor.SpanIoLimitProcessor;
 import com.nageoffer.ai.llmobservability.observation.processor.SummarizeProcessor;
 import com.nageoffer.ai.llmobservability.observation.propagation.BaggageAttributeSpanProcessor;
@@ -24,6 +27,7 @@ import io.opentelemetry.sdk.trace.SpanProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -38,7 +42,7 @@ import java.util.List;
  * llm-observability 的 Spring Boot 自动装配入口（引入依赖即生效，无需宿主 @ComponentScan）。
  *
  * <p><b>装配清单（全部显式 @Bean，不整包扫描）</b>：事件管线 {@link ObservationPipeline}
- * （内置 摘要→截断 processor 链 + span attribute→结构化日志 exporter 链）、观测门面 {@link TelemetryTemplate}、
+ * （过滤器链 + 摘要→截断 processor 链 + span attribute→结构化日志 exporter 链）、观测门面 {@link TelemetryTemplate}、
  * 两个注解切面、micrometer context-propagation 注册。宿主扩展 processor/exporter 只需注册为 bean，
  * 会被 {@link ObservationPipeline} 的构造注入自动收集并按 @Order 排序。</p>
  *
@@ -54,12 +58,27 @@ import java.util.List;
  */
 @AutoConfiguration
 @ConditionalOnClass(ObservationRegistry.class)
-@EnableConfigurationProperties({TelemetryProperties.class, SpringAiTelemetryProperties.class})
+@EnableConfigurationProperties({TelemetryProperties.class, SpringAiTelemetryProperties.class, TelemetryFilterProperties.class})
 public class TelemetryAutoConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(TelemetryAutoConfiguration.class);
 
-    // ==================== 转：processor 链（内置两环） ====================
+    // ==================== 转：过滤器链 + processor 链 ====================
+
+    /** 观测事件过滤器链（SPI 执行器）：收集全部 {@code TelemetryFilter} bean，按 @Order 排序。 */
+    @Bean
+    @ConditionalOnMissingBean
+    public TelemetryFilterChain telemetryFilterChain(ObjectProvider<TelemetryFilter> filters) {
+        return new TelemetryFilterChain(filters.orderedStream().toList());
+    }
+
+    /** 把过滤器链桥接到静态门面（TelemetryStructuredLog 直发路径），启动期安装一次。 */
+    @Bean
+    @ConditionalOnMissingBean
+    public TelemetryFilterBridge telemetryFilterBridge(TelemetryFilterChain chain,
+                                                       TelemetryFilterProperties properties) {
+        return new TelemetryFilterBridge(chain, properties.isEnabled());
+    }
 
     @Bean
     public SummarizeProcessor summarizeProcessor() {
@@ -99,8 +118,11 @@ public class TelemetryAutoConfiguration {
     /** 事件管线：注入容器中全部 processor/exporter bean（含宿主扩展），按 @Order 排序。 */
     @Bean
     public ObservationPipeline observationPipeline(List<ObservationProcessor> processors,
-                                                   List<ObservationExporter> exporters) {
-        return new ObservationPipeline(processors, exporters);
+                                                   List<ObservationExporter> exporters,
+                                                   ObjectProvider<TelemetryFilterChain> filterChain,
+                                                   TelemetryFilterProperties properties) {
+        return new ObservationPipeline(processors, exporters,
+                filterChain.getIfAvailable(), properties.isEnabled());
     }
 
     /** micrometer context-propagation（MDC/OTel/对话上下文跨线程透传）+ Reactor 自动传播（初始化期执行）。 */
@@ -209,5 +231,22 @@ public class TelemetryAutoConfiguration {
     @ConditionalOnMissingBean
     public ChatModelCompletionObservationHandler chatModelCompletionObservationHandler() {
         return new ChatModelCompletionObservationHandler();
+    }
+
+    /** 静态桥安装器：让 {@code TelemetryStructuredLog.emit} 直发路径也走同一过滤器链。 */
+    static class TelemetryFilterBridge implements InitializingBean {
+
+        private final TelemetryFilterChain chain;
+        private final boolean enabled;
+
+        TelemetryFilterBridge(TelemetryFilterChain chain, boolean enabled) {
+            this.chain = chain;
+            this.enabled = enabled;
+        }
+
+        @Override
+        public void afterPropertiesSet() {
+            TelemetryFilterSupport.install(chain, enabled);
+        }
     }
 }

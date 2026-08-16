@@ -2,6 +2,7 @@ package com.nageoffer.ai.llmobservability.observation;
 
 import com.nageoffer.ai.llmobservability.observation.span.SpanWriter;
 import com.nageoffer.ai.llmobservability.observation.event.TelemetryEvent;
+import com.nageoffer.ai.llmobservability.observation.filter.TelemetryFilterChain;
 import com.nageoffer.ai.llmobservability.observation.exporter.ObservationExporter;
 import com.nageoffer.ai.llmobservability.observation.processor.ObservationProcessor;
 import java.util.List;
@@ -29,7 +30,7 @@ import org.springframework.core.annotation.OrderUtils;
  *
  * <p><b>扩展模型</b>：新 processor/exporter = 实现接口 + 注册为 bean（@Component 或 @Bean 均可），
  * 本类与所有 Source 零改动——开闭原则。
- * 两链的内置顺序约定：摘要（10）→ 截断（20）→ [用户扩展 30+]；exporter：span（10）→ 日志（20）→ metrics（30）。</p>
+ * 处理器链内置顺序：摘要（10）→ 截断（20）→ [用户扩展 30+]；exporter：span（10）→ 日志（20）→ metrics（30）；过滤器链（TelemetryFilter）包在整条 emit 之外，先于 processor 执行。</p>
  *
  * <p><b>性能契约</b>：{@link #emit} 在业务线程<b>同步</b>执行整条链，所有 processor/exporter
  * 必须无阻塞（内存写/本地日志），任何网络 IO 一律走后端（OTLP exporter / collector）。</p>
@@ -38,8 +39,15 @@ public class ObservationPipeline {
 
     private final List<ObservationProcessor> processors;
     private final List<ObservationExporter> exporters;
+    private final TelemetryFilterChain filterChain;
+    private final boolean filterEnabled;
 
     public ObservationPipeline(List<ObservationProcessor> processors, List<ObservationExporter> exporters) {
+        this(processors, exporters, null, true);
+    }
+
+    public ObservationPipeline(List<ObservationProcessor> processors, List<ObservationExporter> exporters,
+                               TelemetryFilterChain filterChain, boolean filterEnabled) {
         this.processors = processors.stream()
                 .sorted((a, b) -> Integer.compare(
                         OrderUtils.getOrder(a.getClass(), Integer.MAX_VALUE),
@@ -50,6 +58,8 @@ public class ObservationPipeline {
                         OrderUtils.getOrder(a.getClass(), Integer.MAX_VALUE),
                         OrderUtils.getOrder(b.getClass(), Integer.MAX_VALUE)))
                 .toList();
+        this.filterChain = filterChain;
+        this.filterEnabled = filterEnabled;
     }
 
     /**
@@ -59,6 +69,17 @@ public class ObservationPipeline {
      * @param target 本次事件的写 span 目标（backend / 根 span writer / ambient）
      */
     public void emit(TelemetryEvent event, SpanWriter target) {
+        if (filterChain != null && filterEnabled) {
+            // 过滤器链包住整条下游：chain.doFilter 之前是前置，之后是后置；不调用 = 丢弃
+            if (!filterChain.apply(event, e -> emitInternal(e, target))) {
+                return;
+            }
+            return;
+        }
+        emitInternal(event, target);
+    }
+
+    private void emitInternal(TelemetryEvent event, SpanWriter target) {
         for (ObservationProcessor p : processors) {
             try {
                 event = p.process(event);

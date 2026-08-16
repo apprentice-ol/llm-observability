@@ -7,19 +7,32 @@
     <parent>
         <groupId>com.jjx.ai</groupId>
         <artifactId>llm-observability-parent</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>0.1.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>llm-observability-examples</artifactId>
     <name>llm-observability-examples</name>
-    <description>后端客户端接口的使用示例（Langfuse 数据集/评分 + OpenObserve 查询）。</description>
+    <description>后端客户端接口的使用示例（Langfuse 数据集评分 + OpenObserve 查询）。</description>
 
     <dependencies>
         <dependency>
             <groupId>com.jjx.ai</groupId>
             <artifactId>llm-observability-backends</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <!-- 宿主侧显式引入 tracing 桥 + OTel SDK/exporter（core 的 opentelemetry-sdk 是 optional，不会传递） -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -32,6 +45,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

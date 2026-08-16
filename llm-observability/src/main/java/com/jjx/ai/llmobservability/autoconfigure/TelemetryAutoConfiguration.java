@@ -1,7 +1,5 @@
 package com.jjx.ai.llmobservability.autoconfigure;
 
-import com.jjx.ai.llmobservability.autoconfigure.springai.ChatModelCompletionObservationHandler;
-import com.jjx.ai.llmobservability.autoconfigure.springai.SpringAiConversationObservationFilter;
 import com.jjx.ai.llmobservability.autoconfigure.springai.SpringAiTelemetryProperties;
 import com.jjx.ai.llmobservability.observation.TelemetryTemplate;
 import com.jjx.ai.llmobservability.observation.ObservationPipeline;
@@ -16,23 +14,18 @@ import com.jjx.ai.llmobservability.observation.processor.ObservationProcessor;
 import com.jjx.ai.llmobservability.observation.filter.TelemetryFilterSupport;
 import com.jjx.ai.llmobservability.observation.processor.SpanIoLimitProcessor;
 import com.jjx.ai.llmobservability.observation.processor.SummarizeProcessor;
-import com.jjx.ai.llmobservability.observation.propagation.BaggageAttributeSpanProcessor;
 import com.jjx.ai.llmobservability.observation.propagation.ContextPropagationConfiguration;
-import com.jjx.ai.llmobservability.observation.propagation.GenAiAttributePropagationSpanProcessor;
 import com.jjx.ai.llmobservability.observation.support.AttributeKeys;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.sdk.trace.SpanProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
@@ -52,9 +45,9 @@ import java.util.List;
  * {@link OpenTelemetry} bean 缺失时门面降级 noop（{@code kind=ROOT} 的独立 trace 不再上报，
  * Observation 步骤 span 一并失效），仅打 warn。</p>
  *
- * <p>本模块不依赖任何 LLM 框架；{@link LlmTraceHandler} 默认实现是框架无关的 GenAI 语义记录器，
- * Spring AI 适配已内置（可选依赖 + {@code @ConditionalOnClass}），其它 LLM 框架由宿主应用
- * 提供对应的 {@code ObservationFilter} 适配器即可。</p>
+ * <p>本模块不依赖任何 LLM 框架；{@link LlmTraceHandler} 默认实现是框架无关的 GenAI 语义记录器。
+ * 需要可选依赖的增强（OTel SDK 的 SpanProcessor、Spring AI 适配）都拆在独立自动配置类中，
+ * 用类级 {@code @ConditionalOnClass} 保护，缺失时整类跳过，不阻断启动。</p>
  */
 @AutoConfiguration
 @ConditionalOnClass(ObservationRegistry.class)
@@ -67,14 +60,14 @@ public class TelemetryAutoConfiguration {
 
     /** 观测事件过滤器链（SPI 执行器）：收集全部 {@code TelemetryFilter} bean，按 @Order 排序。 */
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean(TelemetryFilterChain.class)
     public TelemetryFilterChain telemetryFilterChain(ObjectProvider<TelemetryFilter> filters) {
         return new TelemetryFilterChain(filters.orderedStream().toList());
     }
 
     /** 把过滤器链桥接到静态门面（TelemetryStructuredLog 直发路径），启动期安装一次。 */
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean(TelemetryFilterBridge.class)
     public TelemetryFilterBridge telemetryFilterBridge(TelemetryFilterChain chain,
                                                        TelemetryFilterProperties properties) {
         return new TelemetryFilterBridge(chain, properties.isEnabled());
@@ -108,7 +101,7 @@ public class TelemetryAutoConfiguration {
      */
     @Bean
     @ConditionalOnClass(MeterRegistry.class)
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean(MetricsExporter.class)
     public MetricsExporter metricsExporter(ObjectProvider<MeterRegistry> meterRegistry) {
         return new MetricsExporter(meterRegistry.getIfAvailable());
     }
@@ -131,29 +124,6 @@ public class TelemetryAutoConfiguration {
         return new ContextPropagationConfiguration();
     }
 
-    /**
-     * Baggage → span 属性：trace 内所有 span（含框架建的）统一落 baggage 条目 + 后端映射 key。
-     * Spring Boot 自动把 SpanProcessor bean 收进 TracerProvider，与应用出口（collector/直连）无关。
-     * 需要宿主带 OTel SDK（tracing 桥）；{@code telemetry.propagation.baggage-span-attributes=false} 可停用。
-     */
-    @Bean
-    @ConditionalOnClass(SpanProcessor.class)
-    @ConditionalOnProperty(prefix = "telemetry.propagation", name = "baggage-span-attributes",
-            havingValue = "true", matchIfMissing = true)
-    public SpanProcessor baggageAttributeSpanProcessor(ObjectProvider<SpanAttributeKeyMapper> keyMappers) {
-        return new BaggageAttributeSpanProcessor(keyMappers.orderedStream().toList());
-    }
-
-    /**
-     * GenAI 关键字段传播：把最内层 LLM generation span 的 model/usage/system 补到 trace 根与入口 step，
-     * 让 OpenObserve 的 traces 列表/详情在根 span 也能直接看到这些列。
-     */
-    @Bean
-    @ConditionalOnClass(SpanProcessor.class)
-    public SpanProcessor genAiAttributePropagationSpanProcessor() {
-        return new GenAiAttributePropagationSpanProcessor();
-    }
-
     // ==================== 门面与切面 ====================
 
     /**
@@ -166,7 +136,7 @@ public class TelemetryAutoConfiguration {
      * @param env           Spring 环境（命名空间缺省取 spring.application.name）
      */
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean(TelemetryTemplate.class)
     public TelemetryTemplate obsTemplate(ObservationRegistry registry, ObjectProvider<OpenTelemetry> openTelemetry,
                                    ObservationPipeline pipeline, TelemetryProperties properties,
                                    org.springframework.core.env.Environment env) {
@@ -187,14 +157,14 @@ public class TelemetryAutoConfiguration {
 
     /** {@code @TelemetryConversation} 切面（入口对话上下文）。 */
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean(TelemetryConversationAspect.class)
     public TelemetryConversationAspect observedConversationAspect(TelemetryTemplate obsTemplate) {
         return new TelemetryConversationAspect(obsTemplate);
     }
 
     /** {@code @TelemetryStep} 切面（步骤自动埋点）。 */
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean(TelemetryStepAspect.class)
     public TelemetryStepAspect observedStepAspect(TelemetryTemplate obsTemplate) {
         return new TelemetryStepAspect(obsTemplate);
     }
@@ -206,31 +176,9 @@ public class TelemetryAutoConfiguration {
      * 应用可提供自定义 {@link LlmTraceHandler} bean 覆盖。
      */
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean(LlmTraceHandler.class)
     public LlmTraceHandler llmTraceHandler() {
         return new GenAiLlmTraceHandler();
-    }
-
-    /**
-     * Spring AI 存在时激活：把会话/pipeline 关联字段挂到 Spring AI 原生 gen_ai span。
-     * 无 Spring AI 时该 bean 自动跳过，不影响核心能力。
-     */
-    @Bean
-    @ConditionalOnClass(ChatModelObservationContext.class)
-    @ConditionalOnMissingBean
-    public SpringAiConversationObservationFilter springAiConversationObservationFilter() {
-        return new SpringAiConversationObservationFilter();
-    }
-
-    /**
-     * Spring AI 1.1.x 的 completion 只写日志不写 span 属性，这里在 stop 时补写 gen_ai.completion。
-     * 作为 ObservationHandler bean 由 Spring Boot 自动注册到 ObservationRegistry。
-     */
-    @Bean
-    @ConditionalOnClass(ChatModelObservationContext.class)
-    @ConditionalOnMissingBean
-    public ChatModelCompletionObservationHandler chatModelCompletionObservationHandler() {
-        return new ChatModelCompletionObservationHandler();
     }
 
     /** 静态桥安装器：让 {@code TelemetryStructuredLog.emit} 直发路径也走同一过滤器链。 */

@@ -1,0 +1,3 @@
+com.nageoffer.ai.llmobservability.backends.TelemetryBackendsAutoConfiguration
+com.nageoffer.ai.llmobservability.backends.openobserve.OpenObserveOtlpAutoConfiguration
+com.nageoffer.ai.llmobservability.backends.langfuse.LangfuseOtlpAutoConfiguration

@@ -1,0 +1,19 @@
+# 后端客户端示例配置：与主应用相同的后端地址/凭据约定。
+# 只读演示：TELEMETRY_EXAMPLE_ENABLED=true TELEMETRY_EXAMPLE_DATASET=liveRAG TELEMETRY_EXAMPLE_TRACE_ID=<traceId>
+telemetry:
+  langfuse:
+    url: ${LANGFUSE_URL:http://localhost:3000}
+    auth: ${LANGFUSE_AUTH:}
+    public-key: ${LANGFUSE_PUBLIC_KEY:}
+    secret-key: ${LANGFUSE_SECRET_KEY:}
+  openobserve:
+    url: ${OPENOBSERVE_URL:http://localhost:5080/api/default}
+    username: ${OO_USERNAME:admin@openobserve.io}
+    password: ${OO_PASSWORD:OpenObserve@2026}
+    stream: springai_rag_logs
+    trace-stream: default
+  example:
+    enabled: ${TELEMETRY_EXAMPLE_ENABLED:false}
+    dataset: ${TELEMETRY_EXAMPLE_DATASET:}
+    trace-id: ${TELEMETRY_EXAMPLE_TRACE_ID:}
+    limit: 3

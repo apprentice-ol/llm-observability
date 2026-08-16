@@ -49,6 +49,7 @@
 
 > 无需任何 token。后端适配模块坐标为 `com.github.apprentice-ol.llm-observability:llm-observability-backends:0.1.1`。
 > 发新版只需打新 tag，完整说明见根 README「发布与使用」。
+> 真实接入参考：[spring-rag](https://gitee.com/apprentice-ol/spring-rag)（Spring AI RAG 生产级宿主，核心 + backends 双模块），见根 README「实际宿主：spring-rag」。
 
 宿主应用需要自行提供 OTel 导出能力（本组件只负责埋点，不绑定具体 exporter）：
 

@@ -25,7 +25,7 @@
 
 ### 依赖
 
-组件已通过 **JitPack** 发布（公开仓库免 token，`com.github.apprentice-ol.llm-observability:llm-observability:0.1.0`）。
+组件已通过 **JitPack** 发布（公开仓库免 token，`com.github.apprentice-ol.llm-observability:llm-observability:0.1.1`）。
 消费方先声明仓库：
 
 ```xml
@@ -43,11 +43,11 @@
 <dependency>
     <groupId>com.github.apprentice-ol.llm-observability</groupId>
     <artifactId>llm-observability</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
 </dependency>
 ```
 
-> 无需任何 token。后端适配模块坐标为 `com.github.apprentice-ol.llm-observability:llm-observability-backends:0.1.0`。
+> 无需任何 token。后端适配模块坐标为 `com.github.apprentice-ol.llm-observability:llm-observability-backends:0.1.1`。
 > 发新版只需打新 tag，完整说明见根 README「发布与使用」。
 
 宿主应用需要自行提供 OTel 导出能力（本组件只负责埋点，不绑定具体 exporter）：

@@ -12,15 +12,15 @@
 改完代码提交后，打一个新 tag（版本号建议与 POM 版本一致）：
 
 ```powershell
-git tag 0.1.0
-git push origin 0.1.0
+git tag 0.1.1
+git push origin 0.1.1
 ```
 
-首次可访问 <https://jitpack.io/#apprentice-ol/llm-observability/0.1.0> 查看构建状态，
+首次可访问 <https://jitpack.io/#apprentice-ol/llm-observability/0.1.1> 查看构建状态，
 或直接调用构建 API 触发：
 
 ```powershell
-curl.exe "https://jitpack.io/api/build/com/github/apprentice-ol/llm-observability/0.1.0"
+curl.exe "https://jitpack.io/api/build/com/github/apprentice-ol/llm-observability/0.1.1"
 ```
 
 构建成功后即可被任何项目拉取。
@@ -44,7 +44,7 @@ curl.exe "https://jitpack.io/api/build/com/github/apprentice-ol/llm-observabilit
 <dependency>
     <groupId>com.github.apprentice-ol.llm-observability</groupId>
     <artifactId>llm-observability</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
 </dependency>
 ```
 
@@ -54,7 +54,7 @@ curl.exe "https://jitpack.io/api/build/com/github/apprentice-ol/llm-observabilit
 <dependency>
     <groupId>com.github.apprentice-ol.llm-observability</groupId>
     <artifactId>llm-observability-backends</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
 </dependency>
 ```
 

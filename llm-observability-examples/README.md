@@ -18,7 +18,7 @@ set TELEMETRY_EXAMPLE_ENABLED=true
 set TELEMETRY_EXAMPLE_DATASET=liveRAG
 set TELEMETRY_EXAMPLE_TRACE_ID=<一个真实 traceId>
 mvn -o -s ../.mvn-settings.xml -pl llm-observability-examples -am -DskipTests package
-java -jar target/llm-observability-examples-0.1.0-SNAPSHOT.jar
+java -jar target/llm-observability-examples-0.1.1-SNAPSHOT.jar
 ```
 
 演示内容：列出 `liveRAG` 前 3 条黄金数据，按 traceId 查日志与 span（均为只读）。

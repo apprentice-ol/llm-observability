@@ -52,7 +52,7 @@ Langfuse 单条 trace 详情（输入/输出、token 用量、耗时）：
 <dependency>
     <groupId>com.github.apprentice-ol.llm-observability</groupId>
     <artifactId>llm-observability</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
 </dependency>
 ```
 
@@ -67,7 +67,7 @@ public List<Chunk> retrieve(String query) { ... }
 
 ## 发布与使用
 
-通过 **JitPack** 发布（推荐，公开仓库免 token）。仓库为 public，已打 `0.1.0` 标签，
+通过 **JitPack** 发布（推荐，公开仓库免 token）。仓库为 public，已打 `0.1.1` 标签，
 任何人无需凭据即可拉取：
 
 ```xml
@@ -81,7 +81,7 @@ public List<Chunk> retrieve(String query) { ... }
 <dependency>
     <groupId>com.github.apprentice-ol.llm-observability</groupId>
     <artifactId>llm-observability</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
 </dependency>
 ```
 
@@ -91,7 +91,7 @@ public List<Chunk> retrieve(String query) { ... }
 <dependency>
     <groupId>com.github.apprentice-ol.llm-observability</groupId>
     <artifactId>llm-observability-backends</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
 </dependency>
 ```
 

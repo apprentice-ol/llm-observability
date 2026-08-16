@@ -1,5 +1,8 @@
 # 发布到 GitHub Packages（Maven）
 
+> **推荐改用 JitPack（免 token）**：本项目仓库为 public，使用 JitPack 后任何人无需凭据即可拉取，
+> 用法见 [publish-jitpack.md](./publish-jitpack.md)。本文档保留作为备选发布方式。
+
 让 `com.jjx.ai:llm-observability:0.1.0-SNAPSHOT` 变成可被其它项目拉取的“真依赖”，
 最快的方式是发布到 GitHub Packages。本项目根 POM 已配置好
 `distributionManagement`（仓库地址 `https://maven.pkg.github.com/apprentice-ol/llm-observability`）。

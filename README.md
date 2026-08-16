@@ -42,10 +42,17 @@ Langfuse 单条 trace 详情（输入/输出、token 用量、耗时）：
 ## 快速开始
 
 ```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+
 <dependency>
-    <groupId>com.jjx.ai</groupId>
+    <groupId>com.github.apprentice-ol.llm-observability</groupId>
     <artifactId>llm-observability</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
@@ -60,33 +67,43 @@ public List<Chunk> retrieve(String query) { ... }
 
 ## 发布与使用
 
-`com.jjx.ai:llm-observability:0.1.0-SNAPSHOT` 已发布到 GitHub Packages
-（`https://maven.pkg.github.com/apprentice-ol/llm-observability`）。消费方声明仓库后即可拉取：
+通过 **JitPack** 发布（推荐，公开仓库免 token）。仓库为 public，已打 `0.1.0` 标签，
+任何人无需凭据即可拉取：
 
 ```xml
 <repositories>
     <repository>
-        <id>github</id>
-        <url>https://maven.pkg.github.com/apprentice-ol/llm-observability</url>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
     </repository>
 </repositories>
 
 <dependency>
-    <groupId>com.jjx.ai</groupId>
+    <groupId>com.github.apprentice-ol.llm-observability</groupId>
     <artifactId>llm-observability</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
-GitHub Packages 拉包需要凭据：在 `~/.m2/settings.xml` 配置 `id=github` 的 server（密码用 `${env.GITHUB_TOKEN}`），
-并在终端设置 `$env:GITHUB_TOKEN`。发布新版本同样只需：
+后端适配模块（可选）：
 
-```powershell
-$env:GITHUB_TOKEN = "你的 token"
-mvn deploy
+```xml
+<dependency>
+    <groupId>com.github.apprentice-ol.llm-observability</groupId>
+    <artifactId>llm-observability-backends</artifactId>
+    <version>0.1.0</version>
+</dependency>
 ```
 
-完整步骤（Token 生成、Maven settings 配置、正式版本发布）见 [doc/publish-github-packages.md](doc/publish-github-packages.md)。
+发新版流程（改完代码打新 tag，JitPack 自动构建）：
+
+```powershell
+git tag 0.2.0
+git push origin 0.2.0
+```
+
+完整说明见 [doc/publish-jitpack.md](doc/publish-jitpack.md)；
+GitHub Packages（需 token）作为备选发布方式见 [doc/publish-github-packages.md](doc/publish-github-packages.md)。
 
 ## 构建
 

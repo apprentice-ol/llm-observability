@@ -52,3 +52,13 @@ public class DatasetEvalService {
 - `ScoreJudge`：问题/回答/黄金答案 → `ScoreVerdict(value, comment)`（调用 DeepSeek 等 LLM judge）。
 - 关联后分数写入数据集 run；v3 下 Langfuse 不会自动执行 experiment 评估规则，评分由应用/脚本调 LLM 后写回；
   升级 v4 后由评估规则自动打分。
+
+## 配置参考
+
+\src/main/resources/application-telemetry.example.yaml\ 是完整的可观测性配置模板（来自 springai-rag 生产宿主），
+覆盖 collector / sampling / limits / Spring AI / OpenObserve / Langfuse 全部配置面，每个键都有中文注释。
+
+- 示例应用本身只加载 \pplication.yml\ 的最小配置（默认 localhost + 环境变量占位）。
+- 需要完整配置时：把 \pplication-telemetry.example.yaml\ 复制到你自己的应用（或合并内容），
+  并按需设置 \TELEMETRY_*\ / \LANGFUSE_*\ / \OPENOBSERVE_*\ 环境变量。
+- 该文件以 \.example.yaml\ 结尾，Spring Boot 不会自动加载，纯参考用途。

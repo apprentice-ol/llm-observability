@@ -60,15 +60,33 @@ public List<Chunk> retrieve(String query) { ... }
 
 ## 发布与使用
 
-当前坐标 `com.jjx.ai:llm-observability:0.1.0-SNAPSHOT` 是本地快照；要变成其它项目可直接拉取的“真依赖”，
-发布到 GitHub Packages 即可（根 POM 已配置好 `distributionManagement`）：
+`com.jjx.ai:llm-observability:0.1.0-SNAPSHOT` 已发布到 GitHub Packages
+（`https://maven.pkg.github.com/apprentice-ol/llm-observability`）。消费方声明仓库后即可拉取：
+
+```xml
+<repositories>
+    <repository>
+        <id>github</id>
+        <url>https://maven.pkg.github.com/apprentice-ol/llm-observability</url>
+    </repository>
+</repositories>
+
+<dependency>
+    <groupId>com.jjx.ai</groupId>
+    <artifactId>llm-observability</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+</dependency>
+```
+
+GitHub Packages 拉包需要凭据：在 `~/.m2/settings.xml` 配置 `id=github` 的 server（密码用 `${env.GITHUB_TOKEN}`），
+并在终端设置 `$env:GITHUB_TOKEN`。发布新版本同样只需：
 
 ```powershell
 $env:GITHUB_TOKEN = "你的 token"
 mvn deploy
 ```
 
-完整步骤（Token 生成、Maven settings 配置、消费方仓库声明）见 [doc/publish-github-packages.md](doc/publish-github-packages.md)。
+完整步骤（Token 生成、Maven settings 配置、正式版本发布）见 [doc/publish-github-packages.md](doc/publish-github-packages.md)。
 
 ## 构建
 

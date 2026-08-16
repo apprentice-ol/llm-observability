@@ -25,15 +25,29 @@
 
 ### 依赖
 
-引入本组件：
+组件已发布到 GitHub Packages（`com.jjx.ai:llm-observability:0.1.0-SNAPSHOT`）。消费方先声明仓库：
+
+```xml
+<repositories>
+    <repository>
+        <id>github</id>
+        <url>https://maven.pkg.github.com/apprentice-ol/llm-observability</url>
+    </repository>
+</repositories>
+```
+
+再引入依赖：
 
 ```xml
 <dependency>
     <groupId>com.jjx.ai</groupId>
     <artifactId>llm-observability</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
 </dependency>
 ```
+
+> GitHub Packages 拉包需要凭据：在 `~/.m2/settings.xml` 配置 `id=github` 的 server，
+> 密码用 `${env.GITHUB_TOKEN}` 环境变量注入。完整说明见根 README「发布与使用」。
 
 宿主应用需要自行提供 OTel 导出能力（本组件只负责埋点，不绑定具体 exporter）：
 

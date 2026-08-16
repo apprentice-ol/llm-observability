@@ -4,13 +4,27 @@
 
 - 步骤级 span（`@TelemetryStep`）与会话级 trace（`@TelemetryConversation`）
 - 结构化事件日志（`TelemetryLogger` / `TelemetryStructuredLog`）
-- 统一事件管线（processor 敏感过滤/摘要/截断 + exporter 落 span/日志/指标）
+- 统一事件管线（processor 摘要/截断 + exporter 落 span/日志/指标）
 - 事件过滤器链（Spring 风格 SPI：宿主实现 `TelemetryFilter`，覆盖事件/结构化日志/普通日志全生命周期）
 - 框架无关的 LLM 观测规范（`LlmObservations` / `LlmTraceHandler`，写标准 `gen_ai.*` 语义）
 - 属性 key 单一来源（`AttributeKeys`），业务零字面量
 - 后端可插拔：`llm-observability-backends` 提供 OpenObserve / Langfuse 适配
 
 核心原则：**业务只面向 OTel / Micrometer 写通用语义，后端可插拔**。
+
+## 效果展示
+
+OpenObserve Traces（span 列表、耗时、状态与 `gen_ai.*` 属性）：
+
+![OpenObserve Traces](doc/images/openobserve-traces.png)
+
+Langfuse Traces（trace 列表）：
+
+![Langfuse Traces](doc/images/langfuse-traces.png)
+
+Langfuse 单条 trace 详情（输入/输出、token 用量、耗时）：
+
+![Langfuse Trace](doc/images/langfuse-trace.png)
 
 ## 模块
 
@@ -50,4 +64,4 @@ public List<Chunk> retrieve(String query) { ... }
 mvn -B package
 ```
 
-详细使用说明见各模块 README。
+详细使用说明见各模块 README 与 [doc/README.md](doc/README.md)（含核心模块 README 副本、效果图与截图脚本）。

@@ -56,44 +56,27 @@ Langfuse 单条 trace 详情（输入/输出、token 用量、耗时）：
 </dependency>
 ```
 
-引入后自动装配生效；业务用 `TelemetryTemplate` 开 span、记 IO，或直接加注解：
+后端适配按需引入 `llm-observability-backends`，配置前缀统一为 `telemetry.*`。宿主需自行提供 OTel 导出依赖（actuator + tracing bridge + OTLP exporter）。
+
+引入后自动装配生效，业务用注解或 `TelemetryTemplate` 埋点：
 
 ```java
 @TelemetryStep("rag.retrieve")
 public List<Chunk> retrieve(String query) { ... }
 ```
 
-后端适配按需引入 `llm-observability-backends`，配置前缀统一为 `telemetry.*`。
+## 实际宿主：spring-rag
+
+[spring-rag](https://gitee.com/apprentice-ol/spring-rag)（即 springai-rag，RAG 学习练手项目）已把本组件用作全链路可观测组件：
+
+- 查询链（归一化/改写/意图/检索/重排/Agent）、入库链路与 Eval 均用 `@TelemetryStep` 埋点；`ChatController` 入口用 `@TelemetryConversation` + `@TelemetryStep`
+- `StreamChatPipeline` 对 AOP 盲区用 `TelemetryTemplate.step`；`TelemetryDimensions` 通过 `dimensionOnOutput` 自动提取 intent、agent 范式
+- 本地经 otel-collector 扇出 OpenObserve + Langfuse，服务器直连 OpenObserve；配置收敛在 `telemetry.*` 与 `.env`
+- 详细埋点规范见 springai-rag 仓库的 `docs/llm-observability-guide.md`
 
 ## 发布与使用
 
-通过 **JitPack** 发布（推荐，公开仓库免 token）。仓库为 public，已打 `0.1.1` 标签，
-任何人无需凭据即可拉取：
-
-```xml
-<repositories>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-    </repository>
-</repositories>
-
-<dependency>
-    <groupId>com.github.apprentice-ol.llm-observability</groupId>
-    <artifactId>llm-observability</artifactId>
-    <version>0.1.1</version>
-</dependency>
-```
-
-后端适配模块（可选）：
-
-```xml
-<dependency>
-    <groupId>com.github.apprentice-ol.llm-observability</groupId>
-    <artifactId>llm-observability-backends</artifactId>
-    <version>0.1.1</version>
-</dependency>
-```
+通过 **JitPack** 发布（推荐，公开仓库免 token）。仓库为 public，已打 `0.1.1` 标签，任何人无需凭据即可拉取。
 
 发新版流程（改完代码打新 tag，JitPack 自动构建）：
 

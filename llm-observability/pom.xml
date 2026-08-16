@@ -49,7 +49,7 @@
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-logback-appender-1.0</artifactId>
-            <version>2.15.0-alpha</version>
+            <version>${opentelemetry.instrumentation.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
